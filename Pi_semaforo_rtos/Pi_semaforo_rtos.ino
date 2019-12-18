@@ -19,6 +19,7 @@ const int verde = 6;
 const int p_vermelho = 7;
 const int p_verde = 8;
 const int botao = 2;
+const int buzzer = 3;
 
 
 //Define os pinos para a serial   
@@ -33,7 +34,7 @@ char bufferBT[64] = {'\0'};
 
 
 // Define o tempo em segundos para os estados do semaforo
-int t_vermelho = 1, t_amarelo = 1, t_verde = 1, t_adicional;
+int t_vermelho = 10, t_amarelo = 10, t_verde = 10;
 
 // Define as tasks
 void TaskBlink( void *pvParameters );
@@ -106,13 +107,13 @@ void TaskBlink(void *pvParameters)  // Task blink para teste.
   for (;;) // A Task shall never return or exit.
   {
     if(digitalRead(botao) == 0){
-      t_vermelho = 10;
+      t_vermelho = 40;
       digitalWrite(LED_BUILTIN, HIGH);
     } else{
     digitalWrite(LED_BUILTIN, HIGH);   // liga o led interno
     vTaskDelay( 200 / portTICK_PERIOD_MS ); // aguarda um segundo
     digitalWrite(LED_BUILTIN, LOW);    // desliga o led interno
-    vTaskDelay( 4800 / portTICK_PERIOD_MS ); // aguarda um segundo
+    vTaskDelay( 1800 / portTICK_PERIOD_MS ); // aguarda um segundo
     }
   }
 }
@@ -132,8 +133,8 @@ void TaskComSerial(void *pvParameters)
       while(Serial.available() > 0) {
         // Lê byte da serial PC
         caractere = Serial.read();
-        Serial.print("Recebi: ");
-        Serial.println(caractere);
+//        Serial.print("Recebi: ");
+//        Serial.println(caractere);
         // Concatena valores
         bufferPC[i] = caractere;
         i++;
@@ -149,7 +150,7 @@ void TaskComSerial(void *pvParameters)
         }
         if(strncmp(bufferBT, "OK", 2) == 0){
          Serial.println("Conectado");
-         t_vermelho = 10;
+         t_vermelho = 40;
         }
       }
       bufferBT[0] = '\0'; 
@@ -208,7 +209,9 @@ void TaskSemaforoPrincipal(void *pvParameters)  // Task blink para teste.
   pinMode(vermelho, OUTPUT);
   pinMode(p_vermelho, OUTPUT);
   pinMode(p_verde, OUTPUT);
-
+  pinMode(buzzer, OUTPUT);
+  int qtd=0;
+  
   for (;;) // A Task shall never return or exit.
   {
 
@@ -222,10 +225,27 @@ void TaskSemaforoPrincipal(void *pvParameters)  // Task blink para teste.
     vTaskDelay( t_amarelo * 1000 / portTICK_PERIOD_MS ); // Tempo do estado amarelo carro
     digitalWrite(amarelo, LOW);  
     digitalWrite(p_vermelho, LOW);
+    digitalWrite(vermelho, HIGH);
     digitalWrite(p_verde, HIGH);
-    digitalWrite(vermelho, HIGH);  
-    vTaskDelay( t_vermelho * 1000 / portTICK_PERIOD_MS ); // Tempo do estado vermelho carro
+    qtd = (t_vermelho - 5)/2;
+    while(qtd > 0){
+      digitalWrite(buzzer, HIGH);
+      vTaskDelay( 1 * 500 / portTICK_PERIOD_MS );
+      digitalWrite(buzzer, LOW);
+      vTaskDelay( 2 * 1500 / portTICK_PERIOD_MS );
+      qtd = qtd - 1;  
+    }
+    digitalWrite(p_verde, LOW);
+    for(int i=0; i < 5; i++){
+      digitalWrite(buzzer, HIGH);
+      digitalWrite(p_vermelho, HIGH);
+      vTaskDelay( 1 * 1000 / portTICK_PERIOD_MS );
+      digitalWrite(buzzer, LOW);
+      digitalWrite(p_vermelho, LOW);
+      vTaskDelay( 1 * 1000 / portTICK_PERIOD_MS );
+    }
+//    vTaskDelay( t_vermelho * 1000 / portTICK_PERIOD_MS ); // Tempo do estado vermelho carro
     // Desliga flag
-    t_vermelho = 1;
+    t_vermelho = 10;
   }
 }
